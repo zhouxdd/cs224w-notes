@@ -1,0 +1,120 @@
+I"L@<p>In this section, we study several methods to represent a graph in the embedding space. By “embedding” we mean mapping each node in a network into a low-dimensional space, which will give us insight into nodes’ similarity and network structure. Given the widespread prevalence of graphs on the web and in the physical world, representation learning on graphs plays a significant role in a wide range of applications, such as link prediction and anomaly detection. However, modern machine learning algorithms are designed for simple sequence or grids (e.g., fixed-size images/grids, or text/sequences), networks often have complex topographical structures and multimodel features. We will explore embedding methods to get around the difficulties.</p>
+
+<h2 id="embedding-nodes">Embedding Nodes</h2>
+<p>The goal of node embedding is to encode nodes so that similarity in the embedding space (e.g., dot product) approximates similarity in the original network, the node embedding algorithms we will explore generally consist of three basic stages:</p>
+<ol>
+  <li>
+    <p>Define an encoder (i.e., a mapping from nodes to embeddings). Below we include a diagram to illustrate the process, encoder <script type="math/tex">\rm ENC</script> maps node <script type="math/tex">u</script> and <script type="math/tex">v</script> to low-dimensional vector <script type="math/tex">\mathbf{z_u}</script> and <script type="math/tex">\mathbf{z_v}</script>:
+<img src="../assets/img/node_embeddings.png?style=centerme" alt="node embeddings" /></p>
+  </li>
+  <li>Define a node similarity function (i.e., a measure of similarity in the original network), it specifies how the relationships in vector space map to the relationships in the original network.</li>
+  <li>Optimize the parameters of the encoder so that similarity of <script type="math/tex">u</script> and <script type="math/tex">v</script> in the network approximate the dot product between node embeddings: <script type="math/tex">\rm similarity(u,v) \approx \mathbf{z_u}^\intercal \mathbf{z_v}</script>.</li>
+</ol>
+
+<h2 id="shallow-encoding">“Shallow” Encoding</h2>
+<p>How to define a encoder to map nodes into a embedding space?</p>
+
+<p>“Shallow” encoding is the simplest encoding approach, it means encoder is just an embedding-lookup and it could be represented as:</p>
+
+<script type="math/tex; mode=display">\rm ENC(v) = \mathbf{Z}\mathbf{v}\\
+\mathbf{Z} \in \mathbb{R} ^{d \times |v|}, \mathbf{v} \in \mathbb{I} ^{|v|}</script>
+
+<p>Each column in matrix <script type="math/tex">\mathbf{Z}</script> indicates a node embedding, the total number of rows in <script type="math/tex">\mathbf{Z}</script> equals to the dimension/size of embeddings. <script type="math/tex">\mathbf{v}</script> is the indicator vector with all zeros except a one in column indicating node <script type="math/tex">v</script>. We see that each node is assigned to a unique embedding vector in “shallow” encoding. There are many ways to generate node embeddings (e.g., DeepWalk, node2vec, TransE), key choices of methods depend on how they define node similarity.</p>
+
+<h2 id="random-walk">Random Walk</h2>
+<p>Now let’s try to define node similarity. Here we introduce <strong>Random Walk</strong>, an efficient and expressive way to define node similarity <label for="note-randomwalk" class="margin-toggle sidenote-number"></label><input type="checkbox" id="note-randomwalk" class="margin-toggle" /><span class="sidenote">Random walk has a flexible stochastic definition of node similarity that incorporates both local and higher-order neighborhood information, also it does not need to consider all node pairs when training; only need to consider pairs that co-occur on random walks. </span> and train node embeddings: given a graph and a starting point, we select a neighbor of it at random, and move to this neighbor; then we select a neighbor of this point at random, and move to it, etc. The (random) sequence of points selected this way is a random walk on the graph. So <script type="math/tex">\rm similarity(u,v)</script> is defined as the probability that <script type="math/tex">u</script> and <script type="math/tex">v</script> co-occur on a random walk over a network. We can generate random-walk embeddings following these steps:</p>
+
+<ol>
+  <li>Estimate probability of visiting node <script type="math/tex">v</script> on a random walk starting from node <script type="math/tex">u</script> using some random walk strategy <script type="math/tex">R</script>. The simplest idea is just to run fixed-length, unbiased random walks starting from each node (i.e., DeepWalk from Perozzi et al., 2013).</li>
+  <li>Optimize embeddings to encode these random walk statistics, so the similarity between embeddings (e.g., dot product) encodes Random Walk similarity.</li>
+</ol>
+
+<h3 id="random-walk-optimization-and-negative-sampling">Random walk optimization and Negative Sampling</h3>
+<p>Since we want to find embedding of nodes to d-dimensions that preserve similarity, we need to learn node embedding such that nearby nodes are close together in the network. Specifically, we can define nearby nodes <script type="math/tex">N_R (u)</script> as neighborhood of node <script type="math/tex">u</script> obtained by some strategy <script type="math/tex">R</script>. Let’s recall what we learn from random walks, we could run <strong>short fixed-length random walks</strong> starting from each node on the graph using some strategy <script type="math/tex">R</script> to collect <script type="math/tex">N_R (u)</script>, which is the multiset of nodes visited on random walks starting from <script type="math/tex">u</script>. Note that <script type="math/tex">N_R (u)</script>can have repeat elements since nodes can be visited multiple times on random walks. Then we might optimize embeddings to maximize the likelihood of random walk co-occurrences, we compute loss function as:</p>
+
+<script type="math/tex; mode=display">\mathcal{L} =\sum_{u\in V} \sum_{v\in N_R (u)} -\rm \ log (P(v|\mathbf{z_u}))</script>
+
+<p>where
+we parameterize <script type="math/tex">P(v|\mathbf{z_u})</script> using softmax:</p>
+
+<script type="math/tex; mode=display">P(v|\mathbf{z_u}) = \rm \frac{exp(\mathbf{z_u}^\intercal \mathbf{z_v})}{exp(\sum_{n \in V}\mathbf{z_u}^\intercal \mathbf{z_n})}</script>
+
+<p>Put it together:</p>
+
+<script type="math/tex; mode=display">\mathcal{L} =\sum_{u\in V} \sum_{v\in N_R (u)} - \rm \ log (\rm \frac{exp(\mathbf{z_u}^\intercal \mathbf{z_v})}{exp(\sum_{n \in V}\mathbf{z_u}^\intercal \mathbf{z_n})})</script>
+
+<p>To optimize random walk embeddings, we need to find embeddings <script type="math/tex">\mathbf{z_u}</script> that minimize <script type="math/tex">\mathcal{L}</script>. But doing this naively without any changes is too expensive, 
+nested sum over nodes gives <script type="math/tex">\rm O(|V|^2)</script> complexity. Here we introduce <strong>Negative Sampling</strong> <label for="negative_sampling" class="margin-toggle sidenote-number"></label><input type="checkbox" id="negative_sampling" class="margin-toggle" /><span class="sidenote">To read more about negative sampling, refer to <em>Goldberg et al., word2vec Explained: Deriving Mikolov et al.’s Negative-Sampling Word-Embedding Method (2014)</em>.</span> to approximate the loss. Technically, Negative sampling is a different objective, but it is a form of Noise Contrastive Estimation (NCE) which approximately maximizes the log probability of softmax. New formulation corresponds to using a logistic regression (sigmoid func.) to distinguish the target node <script type="math/tex">v</script> from nodes <script type="math/tex">n_i</script> sampled from background distribution <script type="math/tex">P</script> such that</p>
+
+<script type="math/tex; mode=display">\rm \ log (\frac{exp(\mathbf{z_u}^\intercal \mathbf{z_v})}{exp(\sum_{n \in V}\mathbf{z_u}^\intercal \mathbf{z_n})}) \approx log(\sigma (\mathbf{z_u}^\intercal \mathbf{z_v})) - \sum_{i = 1}^k log(\mathbf{z_u}^\intercal \mathbf{z_{n_{i}}})), \ n_i \sim P_v</script>
+
+<p><script type="math/tex">\rm P_v</script> means random distribution over all nodes. Instead of normalizing with respect to all nodes, we just normalize against <script type="math/tex">k</script> random “negative samples” <script type="math/tex">n_i</script>. In this way, we need to sample <script type="math/tex">k</script> negative nodes proportional to degree to compute the loss function. Note that higher <script type="math/tex">k</script> gives more robust estimates, but it also corresponds to higher bias on negative events. In practice, we choose <script type="math/tex">k</script> between 5 to 20.</p>
+
+<h3 id="node2vec">Node2vec</h3>
+<p>So far we have described how to optimize embeddings given random walk statistics, What strategies should we use to run these random walks? As we mentioned before, the simplest idea is to run fixed-length, unbiased random walks starting from each node (i.e., DeepWalk from Perozzi et al., 2013), the issue is that such notion of similarity is too constrained. We observe that flexible notion of network neighborhood <script type="math/tex">N_R (u)</script> of node <script type="math/tex">u</script> leads to rich node embeddings, the idea of Node2Vec is using flexible, biased random walks that can trade off between local and global views of the network (Grover and Leskovec, 2016). Two classic strategies to define a neighborhood <script type="math/tex">N_R (u)</script> of a given node <script type="math/tex">u</script> are BFS and DFS:</p>
+
+<p><img src="../assets/img/node2vec.png?style=centerme" alt="node2vec" /></p>
+
+<p>BFS can give a local micro-view of neighborhood, while DFS provides a global macro-view of neighborhood. Here we can define return parameter <script type="math/tex">p</script> and in-out parameter <script type="math/tex">q</script> and use biased <script type="math/tex">\rm 2^{nd}</script>-order random walks to explore network neighborhoods, where <script type="math/tex">p</script> models transition probabilities to return back to the previous node and <script type="math/tex">q</script> defines the “ratio” of BFS and DFS. Specifically, given a graph below, walker came from edge (<script type="math/tex">s_1</script>, <script type="math/tex">w</script>) and is now at <script type="math/tex">w</script>, <script type="math/tex">1</script>, <script type="math/tex">1/q</script> and <script type="math/tex">1/p</script> show the probabilities of which node will visit next (here <script type="math/tex">w</script>, <script type="math/tex">1</script>, <script type="math/tex">1/q</script> and <script type="math/tex">1/p</script> are unnormalized probabilities):</p>
+
+<p><img src="../assets/img/biased_walk.png?style=centerme" alt="biased_walk" /></p>
+
+<p>So now <script type="math/tex">N_R (u)</script> are the nodes visited by the biased walk. Let’s put our findings together to state the node2vec algorithm:</p>
+<ol>
+  <li>Compute random walk probabilities</li>
+  <li>Simulate <script type="math/tex">r</script> random walks of length <script type="math/tex">l</script> starting from each node <script type="math/tex">u</script></li>
+  <li>Optimize the node2vec objective using Stochastic Gradient Descent</li>
+</ol>
+
+<h2 id="transe">TransE</h2>
+<p>Here we take a look at representation learning on multi-relational graph. 
+Multi-relational graphs are graphs with multiple types of edges, they are incredibly useful in applications like knowledge graphs, where nodes are referred to as entities, edges as relations. For example, there may be one node representing “J.K.Rowling” and another representing “Harry Potter”, and an edge between them with the type “is author of”. In order to create an embedding for this type of graph, we need to capture what the types of edges are, because different edges indicate different relations.</p>
+
+<p><strong>TransE</strong>(Bordes, Usunier, Garcia-Duran. NeurIPS 2013.) is a particular algorithm designed to learn node embeddings for multi-relational graphs. 
+We’ll let a multi-relational graph <script type="math/tex">G=(E,S,L)</script> consist of the set of <script type="math/tex">entities</script> <script type="math/tex">E</script> (i.e., nodes), a set of edges <script type="math/tex">S</script>, and a set of possible relationships <script type="math/tex">L</script>. In TransE, relationships between entities are represented as triplets：</p>
+
+<script type="math/tex; mode=display">(h,l,t)</script>
+
+<p>Where <script type="math/tex">h \in E</script> is head entity or source-node, <script type="math/tex">l \in L</script> is relation and <script type="math/tex">t \in E</script> is tail entity or destination-node. Similar to previous methods, entities are embedded in an entity space <script type="math/tex">\mathbb{R}^k</script>. The main innovation of TransE is that each relationship <script type="math/tex">l</script> is also embedded as a vector <script type="math/tex">\mathbf{l} \in \mathbb{R}^k</script>.</p>
+
+<p><img src="../assets/img/TransE.png?style=centerme" alt="TransE" /></p>
+
+<p>That is, if <script type="math/tex">(h,l,s) \in S</script>, TransE tries to ensure that:</p>
+
+<script type="math/tex; mode=display">\mathbf{h}+\mathbf{l} \approx \mathbf{t}</script>
+
+<p>Simultaneously, if the edge <script type="math/tex">(h,l,t)</script> does not exist, TransE tries to make sure that:</p>
+
+<script type="math/tex; mode=display">\mathbf{h}+\mathbf{l} \neq \mathbf{t}</script>
+
+<p>TransE accomplishes this by minimizing the following loss:</p>
+
+<script type="math/tex; mode=display">\mathcal{L} = \sum_{(h,l,t)\in S}(\sum_{(h',l,t')\in S'_{(h,l,s)}}[\gamma +d(\mathbf{h}+\mathbf{l},\mathbf{t}) - d(\mathbf{h'}+\mathbf{l},\mathbf{t'})]_+)</script>
+
+<p>Here <script type="math/tex">(h',l,s')</script> are “corrupted” triplets, chosen from the set <script type="math/tex">S'_{(h,l,t)}</script> of corruptions of <script type="math/tex">(h,l,t)</script>, which are all triplets where either <script type="math/tex">h</script> or <script type="math/tex">t</script> (but not both) is replaced by a random entity:</p>
+
+<script type="math/tex; mode=display">S'_{(h,l,t)} = \{ (h',l,t) | h' \in E  \} \cup \{  (h,l,t') | t' \in E  \}</script>
+
+<p>Additionally, <script type="math/tex">\rm \gamma >0</script> is a sclar called the <script type="math/tex">margin</script>, the function <script type="math/tex">d(.,.)</script> is the Euclidean distance, and <script type="math/tex">[]_+</script> is the positive part function (defined as max<script type="math/tex">(0,.)</script>). Finally, in order to ensure the quality of our embeddings, TransE restricts all the entity embeddings to have length <script type="math/tex">1</script>, that is, for every <script type="math/tex">e \in E</script>:</p>
+
+<script type="math/tex; mode=display">|| e||_2 = 1</script>
+
+<p>Figure below shows the pseudocode of TransE algorithm:
+ <img src="../assets/img/TransE_a.png?style=centerme" alt="TransEa" /></p>
+
+<h2 id="graph-embedding">Graph Embedding</h2>
+<p>We may also want to embed an entire graph <script type="math/tex">G</script> in some applications (e.g., classifying toxic vs. non-toxic molecules, identifying anomalous graphs).</p>
+
+<p><img src="../assets/img/graph_embedding.png?style=centerme" alt="GraphE" /></p>
+
+<p>There are several ideas to accomplish graph embedding:</p>
+<ol>
+  <li>The simple idea (Duvenaud et al., 2016) is to run a standard graph embedding technique on the (sub)graph <script type="math/tex">G</script>, then just sum (or average) the node embeddings in the (sub)graph <script type="math/tex">G</script>.</li>
+  <li>
+    <p>Introducing a “virtual node” to represent the (sub)graph and run a standard graph embedding technique:
+<img src="../assets/img/virtual_nodes.png?style=centerme" alt="VirtualN" />
+To read more about using the virtual node for subgraph embedding, refer to <em>Li et al., Gated Graph Sequence Neural Networks (2016)</em></p>
+  </li>
+  <li>We can also use <strong>anonymous walk embeddings</strong>. In order to learn graph embeddings, we could enumerate all possible anonymous walks <script type="math/tex">a_i</script> of <script type="math/tex">l</script> steps and record their counts and represent the graph as a probability distribution over these walks. To read more about anonymous walk embeddings, refer to <em>Ivanov et al., Anonymous Walk Embeddings (2018)</em>.</li>
+</ol>
+:ET

@@ -1,0 +1,102 @@
+I"�<p>In this section, we study how a infection propagates through a network. We will look into two classed of model, namely decision based models and probabilistic models. But first lets look at some terminology used throughout the post.</p>
+
+<p><strong>Terminology</strong></p>
+<ol>
+  <li>Cascade: Propagation tree created by spreading contagion</li>
+  <li>Contagion: What is spreading in the network, e.g., diseases, tweet, etc.</li>
+  <li>Infection: Adoption/activation of a node</li>
+  <li>Main players: Infected/active nodes, early adopters</li>
+</ol>
+
+<h1 id="decision-based-models">Decision Based Models</h1>
+<p>In decision based models, every nodes independently decides whether to adopt the contagion or not depending upon its neighbors. The decision is modelled as a two-player coordination game between user and its neighbor and related payoffs. Hence a node with degree <script type="math/tex">k</script> plays <script type="math/tex">k</script> such games to decide its payoff and correspondingly its behavior.</p>
+
+<h2 id="single-contagion-model">Single Contagion Model</h2>
+<p>There are two contagions <script type="math/tex">A</script> and <script type="math/tex">B</script> in the network and initially every node has behavior <script type="math/tex">B</script>. Every node can have only one behavior out of the two. The payoff matrix is given as:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th> </th>
+      <th>A</th>
+      <th>B</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>A</td>
+      <td>a</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <td>B</td>
+      <td>0</td>
+      <td>b</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Lets analyze a node with d neighbors, and let p be the fraction of nodes who have adopted <script type="math/tex">A</script>. Hence the payoff for <script type="math/tex">A</script> is <script type="math/tex">apd</script> and payoff for <script type="math/tex">B</script> is <script type="math/tex">b(1-p)d</script>. Hence the node adopts behavior <script type="math/tex">A</script> if 
+<script type="math/tex">apd > b(1-p)d \implies p > \frac{b}{a+b} = q</script>(threshold)</p>
+
+<h3 id="case-study-modelling-protest-recruitment-on-social-networks">Case Study: <a href="https://arxiv.org/abs/1111.5595">Modelling Protest Recruitment on social networks</a></h3>
+<p>Key Insights:</p>
+<ul>
+  <li>Uniform activation threhold for users, with two peaks</li>
+  <li>Most cascades are short</li>
+  <li>Successful cascades are started by central users</li>
+</ul>
+
+<h4 id="note">Note:</h4>
+<p><strong>k-core decomposition</strong>: biggest connected subgraph where every node has at least degree k (iteratively remove nodes with degree less than k)</p>
+
+<h3 id="multiple-contagion-model">Multiple Contagion Model</h3>
+<p>There are two contagions <script type="math/tex">A</script> and <script type="math/tex">B</script> in the network and initially every node has behavior <script type="math/tex">B</script>. In this case a node can have both behavior <script type="math/tex">A</script> and <script type="math/tex">B</script> at a total cost of <script type="math/tex">c</script> (over all interactions). The payoff matrix is given as:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th> </th>
+      <th>A</th>
+      <th>B</th>
+      <th>AB</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>A</td>
+      <td>a</td>
+      <td>0</td>
+      <td>a</td>
+    </tr>
+    <tr>
+      <td>B</td>
+      <td>0</td>
+      <td>b</td>
+      <td>b</td>
+    </tr>
+    <tr>
+      <td>AB</td>
+      <td>a</td>
+      <td>b</td>
+      <td>max(a,b)</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="example-infinite-line-graph">Example: Infinite Line graph</h3>
+<p><strong>Case 1</strong>:<strong>A-w-B</strong> 
+<img src="../assets/img/decision_model_1.png?style=centerme" alt="decision_case_1" /></p>
+
+<p>Payoffs for <script type="math/tex">w</script>: <script type="math/tex">A: a</script>, <script type="math/tex">B: 1</script>, <script type="math/tex">AB: a+1-c</script></p>
+
+<p><img src="../assets/img/decision_model_2.png?style=centerme" alt="decision_case_2" /></p>
+
+<p><strong>Case 1</strong>: <strong>AB-w-B</strong>
+<img src="../assets/img/decision_model_3.png?style=centerme" alt="decision_case_3" /></p>
+
+<p>Payoffs for <script type="math/tex">w</script>: <script type="math/tex">A: a</script>, <script type="math/tex">B: 1</script>, <script type="math/tex">AB: max(a, 1) + 1 -c</script></p>
+
+<p><img src="../assets/img/decision_model_4.png?style=centerme" alt="decision_case_4" /></p>
+
+:ET

@@ -1,0 +1,173 @@
+I"�/<p>In the previous section, we have learned how to represent a graph using “shallow” encoders. These techniques give us a powerful expression of a graph in a vector space, but there are some limitations. In this section, we will present several different approaches using deep encoders to represent a graph. Specifically, we will explore how to embed a graph through multiple layers of non-linear transformations of a graph structure.</p>
+
+<h2 id="limitations-of-shallow-encoders">Limitations of “Shallow Encoders”</h2>
+<ul>
+  <li><script type="math/tex">O(\rvert V \rvert)</script> parameters are needed.</li>
+</ul>
+
+<p>The number of parameters we estimate equals the number of nodes. There is no sharing of parameters between nodes and every node has its own unique embedding.</p>
+
+<ul>
+  <li>Shallow encoders are Inherently “transductive”.</li>
+</ul>
+
+<p>It cannot generate embeddings for nodes that have not been seen
+during training. Therefore, when a new node arrives, we need to embed the entire graph again.</p>
+
+<ul>
+  <li>Shallow encoders do not incorporate node features.</li>
+</ul>
+
+<p>It cannot incorporate node features and many graphs have node features that we can and should
+leverage.</p>
+
+<ul>
+  <li>Embedding is not task-specific.</li>
+</ul>
+
+<p>For example, in the case of classification, the embedding should obey link classification.</p>
+
+<h2 id="deep-graph-encoders-using-graph-convolutional-networks">Deep Graph Encoders using Graph Convolutional Networks</h2>
+
+<h3 id="why-is-this-hard">Why is this hard?</h3>
+<p>Traditionally, neural network are designed for fixed-sized graphs. For example, we consider images as fixed-size graphs and text as a line graph. Most of the graphs in real world has arbitrary size and complex topological structures. There is no fixed node ordering or reference point.</p>
+
+<h3 id="setup">Setup</h3>
+<p>Assume that we have a graph <script type="math/tex">G</script> with the following properties:</p>
+<ul>
+  <li><script type="math/tex">V</script> is the vertex set</li>
+  <li><script type="math/tex">A</script> is the adjacency matrix</li>
+  <li><script type="math/tex">X\in R^{m\times\rvert V \rvert}</script> is a matrix of node features</li>
+  <li>Node features can be for example user profile, gene expressions, indicator vectors and so on</li>
+</ul>
+
+<h3 id="computation-graph-and-generalize-convolution">Computation Graph and Generalize Convolution</h3>
+<p>We want to not only keep the structure of the network but also borrow the neighboring features. In order to achieve this, we can generate node embeddings based on local network neighborhoods. For example, if we want to create an embedding for node <script type="math/tex">A</script>, we can collect information from its neighbour: <script type="math/tex">B, C, D</script> and so on. The following figure demonstrates a two-layer graph network.
+<img src="../assets/img/aggregate_neighbors.png?style=centerme" alt="aggregate_neighbors" />
+The little boxes are some neural networks that aggregate neighboring features. The aggregation function needs to be <strong>order invariant</strong> (max, average and so on).
+The computation graph for all the nodes in the input graph with two layers deep will look like the following:
+<img src="../assets/img/computation_graph.png?style=centerme" alt="computation_graph" />
+We can see that every node defines a computation graph based on its neighbors. In particular, the computation graph for node <script type="math/tex">A</script> can be viewed as the following:
+<img src="../assets/img/computation_graph_for_a.png?style=centerme" alt="computation_graph_for_a" />
+Layer-0 is the input layer with node feature <script type="math/tex">X</script>. In each layer, we will do an aggregation to combine the node features and create some hidden representation of nodes.
+Also, notice that the concept of the number of layers here means the number of hops from the targeting node. In this example, we are looking at a graph neural network with two layers.</p>
+
+<h3 id="deep-encoder">Deep Encoder</h3>
+<p>In each layer， we need to first aggregate the neighbour messages and apply a neural network. Here, we will see a simple example using the average aggregation function:</p>
+<ul>
+  <li>0th layer: <script type="math/tex">h^0_v = x_v</script>, this is just the node feature</li>
+  <li>kth layer: <script type="math/tex">h_v^{K} = \sigma(W_k\sum_{u\in N(v)}\frac{h_u^{k-1}}{\rvert N(v)\rvert} + B_kh_v^{k-1}), \forall k \in \{1, .., K\}</script>,</li>
+</ul>
+
+<p><script type="math/tex">h_v^{k-1}</script> is the embedding from the previous layer, <script type="math/tex">\sigma</script> is the activation function (e.g. ReLU), <script type="math/tex">W_k, B_k</script> are the trainable parameters, and <script type="math/tex">\rvert N(v) \rvert</script> are the neighbours of node <script type="math/tex">v</script></p>
+
+<ul>
+  <li><script type="math/tex">z_v = h_v^{k}</script>, this is the final embedding for after <script type="math/tex">K</script> layers</li>
+</ul>
+
+<p>Equivalently, these computation can be written in a vector so that it is easier to implement in practice:</p>
+
+<p><script type="math/tex">H^{l+1} = \sigma(H^{l}W_0^{l} + \tilde{A}H^{l}W_1^{l})</script> with <script type="math/tex">\tilde{A}=D^{-\frac{1}{2}}AD^{-\frac{1}{2}}</script></p>
+
+<h3 id="training-the-model">Training the Model</h3>
+<p>We can feed these embeddings into any loss functions and run stochastic gradient descent to train the weight parameters.
+For example, in a binary classification we can define the loss function as:</p>
+
+<script type="math/tex; mode=display">L = \sum_{v\in V} y_v \log(\sigma(z_v^T\theta)) + (1-y_v)\log(1-\sigma(z_v^T\theta))</script>
+
+<p>Where <script type="math/tex">y_v</script> are the node class label, <script type="math/tex">z_v</script> are the encoder outputs, <script type="math/tex">\theta</script> is the classification weights, and <script type="math/tex">\sigma</script> is sigmoid function.
+In addition, we can also train the model in an unsupervised manner by using: random walk, graph factorization, node proximity and so on.</p>
+
+<h3 id="inductive-capability">Inductive Capability</h3>
+<p>Suppose we only trained the model using the nodes <script type="math/tex">A, B, C</script>, the newly added nodes <script type="math/tex">D,E,F</script> can also be evaluated since the parameters are share crossed all nodes in the model.
+<img src="../assets/img/apply_to_new_nodes.png?style=centerme" alt="apply_to_new_nodes" /></p>
+
+<h2 id="graphsage">GraphSage</h2>
+<p>So far we have explored a simple neighbourhood aggregation methods, but we can also generalize the aggregations in the following form:</p>
+
+<script type="math/tex; mode=display">h_v^{K} = \sigma([W_k AGG(\{h_u^{k-1}, \forall u \in N(v)\}) ,B_kh_v^{k-1}])</script>
+
+<p>Where for a node <script type="math/tex">v</script> we can apply different aggregation methods to the neighbors using <script type="math/tex">AGG</script>, then concatenate with itself.
+For example, the aggregation function can be:</p>
+<ul>
+  <li>Mean: Take a weighted average of neighbors</li>
+</ul>
+
+<script type="math/tex; mode=display">AGG = \sum_{u\in N(v)} \frac{h_u^{k-1}}{\rvert N(v) \rvert}</script>
+
+<ul>
+  <li>Pool: Transform neighbor vectors and apply symmetric vector function (<script type="math/tex">\gamma</script> can be element-wise mean or max)</li>
+</ul>
+
+<script type="math/tex; mode=display">AGG = \gamma(\{ Qh_u^{k-1}, \forall u\in N(v)\})</script>
+
+<ul>
+  <li>LSTM: Apply LSTM to reshuffled of neighbors</li>
+</ul>
+
+<script type="math/tex; mode=display">AGG = LSTM(\{ h_u^{k-1}, \forall u\in \pi(N(v)\}))</script>
+
+<h2 id="attention">Attention</h2>
+<p>What happened if we want to incorporate different weights for different nodes? For example, some nodes are more important than other nodes.</p>
+
+<p>Let <script type="math/tex">\alpha_{vu}</script> be the weighting factor (importance) of node <script type="math/tex">u</script>’s message to node <script type="math/tex">v</script>. Previously, in the average aggregation, we defined <script type="math/tex">\alpha=\frac{1}{\rvert N(v) \rvert}</script>, but we can also explicitly define <script type="math/tex">\alpha</script> based on the structural property of the graph.</p>
+
+<h3 id="attention-mechanism">Attention Mechanism</h3>
+<p>Let <script type="math/tex">\alpha_{uv}</script> be computed as a byproduct of an attention mechanism <script type="math/tex">a</script>:
+Let <script type="math/tex">a</script> compute attention coefficients <script type="math/tex">e_{vu}</script> across pairs of nodes <script type="math/tex">u, v</script> based on their messages:</p>
+
+<script type="math/tex; mode=display">e_{vu} = a(W_kh_u^{k-1}, W_kh)v^{k-1}</script>
+
+<p>where <script type="math/tex">e_{vu}</script> indicates the importance of node <script type="math/tex">u</script>’s message to node <script type="math/tex">v</script>. Then normalize the coefficients using the softmax function in
+order to be comparable across different neighborhoods:</p>
+
+<script type="math/tex; mode=display">\alpha_{vu} = \frac{\exp(e_{vu})}{\sum_{k\in N(v)}\exp(e_{vk})}</script>
+
+<p>Therefore we have:</p>
+
+<script type="math/tex; mode=display">h_{v}^k = \sigma(\sum_{u\in N(v)}\alpha_{vu}W_kh^{k-1}_u)</script>
+
+<p>Notice that this approach is agnostic to the choice of <script type="math/tex">a</script> and parameters of <script type="math/tex">a</script> are trained jointly.</p>
+
+<h2 id="reference">Reference</h2>
+<p>Here is a list of useful references:</p>
+
+<p><strong>Tutorials and overviews:</strong></p>
+<ul>
+  <li><a href="https://arxiv.org/pdf/1806.01261.pdf">Relational inductive biases and graph networks (Battaglia et al., 2018)</a></li>
+  <li><a href="https://arxiv.org/pdf/1709.05584.pdf">Representation learning on graphs: Methods and applications (Hamilton et al., 2017)</a></li>
+</ul>
+
+<p><strong>Attention-based neighborhood aggregation:</strong></p>
+<ul>
+  <li><a href="https://arxiv.org/pdf/1710.10903.pdf">Graph attention networks (Hoshen, 2017; Velickovic et al., 2018; Liu et al., 2018)</a></li>
+</ul>
+
+<p><strong>Embedding entire graphs:</strong></p>
+<ul>
+  <li>Graph neural nets with edge embeddings (<a href="https://arxiv.org/pdf/1806.01261.pdf">Battaglia et al., 2016</a>; <a href="https://arxiv.org/pdf/1704.01212.pdf">Gilmer et. al., 2017</a>)</li>
+  <li>Embedding entire graphs (<a href="https://dl.acm.org/citation.cfm?id=2969488">Duvenaud et al., 2015</a>; <a href="https://arxiv.org/pdf/1603.05629.pdf">Dai et al., 2016</a>; <a href="https://arxiv.org/abs/1803.03324">Li et al., 2018</a>) and graph pooling
+(<a href="https://arxiv.org/pdf/1806.08804.pdf">Ying et al., 2018</a>, <a href="https://arxiv.org/pdf/1911.05954.pdf">Zhang et al., 2018</a>)</li>
+  <li><a href="https://arxiv.org/pdf/1802.08773.pdf">Graph generation</a> and <a href="https://arxiv.org/pdf/1802.04687.pdf">relational inference</a> (You et al., 2018; Kipf et al., 2018)</li>
+  <li><a href="https://arxiv.org/pdf/1810.00826.pdf">How powerful are graph neural networks(Xu et al., 2017)</a></li>
+</ul>
+
+<p><strong>Embedding nodes:</strong></p>
+<ul>
+  <li>Varying neighborhood: <a href="https://arxiv.org/pdf/1806.03536.pdf">Jumping knowledge networks Xu et al., 2018)</a>, <a href="https://arxiv.org/pdf/1802.00910.pdf">GeniePath (Liu et al., 2018</a></li>
+  <li><a href="https://arxiv.org/pdf/1906.04817.pdf">Position-aware GNN (You et al. 2019)</a></li>
+</ul>
+
+<p><strong>Spectral approaches to graph neural networks:</strong></p>
+<ul>
+  <li><a href="https://arxiv.org/pdf/1606.09375.pdf">Spectral graph CNN</a> &amp; <a href="https://arxiv.org/pdf/1609.02907.pdf">ChebNet</a> [Bruna et al., 2015; Defferrard et al., 2016)</li>
+  <li><a href="https://arxiv.org/pdf/1611.08097.pdf">Geometric deep learning (Bronstein et al., 2017; Monti et al., 2017)</a></li>
+</ul>
+
+<p><strong>Other GNN techniques:</strong></p>
+<ul>
+  <li><a href="https://arxiv.org/pdf/1905.12265.pdf">Pre-training Graph Neural Networks (Hu et al., 2019)</a></li>
+  <li><a href="https://arxiv.org/pdf/1903.03894.pdf">GNNExplainer: Generating Explanations for Graph Neural Networks (Ying et al., 2019)</a></li>
+</ul>
+
+:ET
