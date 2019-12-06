@@ -10,36 +10,36 @@ In the previous section, we have learned how to represent a graph using "shallow
 * Scalability: every node has its own embeddings
 * Inherently Transductive: it cannot generate embeddings for unseen nodes.
 * Node Feature Excluded: it cannot leverage node features.
-* Not Task Specific: it cannot be generalized to train with different loss function.
+* Not Task-Specific: it cannot be generalized to train with different loss functions.
 
 Fortunately, the above limitations can be solved by using graph neural networks.
 
 ## Graph Convolutional Networks (GCN)
 
-Traditionally, neural network are designed for fixed-sized graphs. For example, we could consider a image as fixed-size graph or text as a line graph. However, most of the graphs in the real world has arbitrary size and complex topological structure. Therefore, we need to define the computation graph of GCN differently.
+Traditionally, a neural network is designed for fixed-sized graphs. For example, we could consider an image as fixed-size graph or text as a line graph. However, most of the graphs in the real world have an arbitrary size and complex topological structure. Therefore, we need to define the computation graph of GCN differently.
 
 ### Setup
 Given $$G = (V, A, X)$$ be a graph such that:
 * $$V$$ is the vertex set
 * $$A$$ is the adjacency matrix
-* $$X\in \mathbb{R}^{m\times\rvert V \rvert}$$ is the node feature matrix 
+* $$X\in \mathbb{R}^{m\times\rvert V \rvert}$$ is the node feature matrix
 
 ### Computation Graph and Generalized Convolution
 ![aggregate_neighbors](../assets/img/aggregate_neighbors.png?style=centerme)
-Suppose $$G$$ is the graph in the above figure on the left, our goal is to define a computation graph of GCN with convolution. The GCN should keep the structure of the graph and incorporate the neighboring features. For example, if we want to create an embedding for node $$A$$, we can aggregate the information from its neighbour: $$B, C, D$$.
-The aggregation (little boxes) needs to be **order invariant** (max, average, etc.). 
+Suppose $$G$$ is the graph in the above figure on the left, our goal is to define a computation graph of GCN with convolution. The GCN should keep the structure of the graph and incorporate the neighboring features. For example, if we want to create an embedding for node $$A$$, we can aggregate the information from its neighbor: $$B, C, D$$.
+The aggregation (little boxes) needs to be **order invariant** (max, average, etc.).
 The computation graph for all the nodes in the graph with two layers deep will look like the following:
 ![computation_graph](../assets/img/computation_graph.png?style=centerme)
 Notice that every node defines a computation graph based on its neighbors. In particular, the computation graph for node $$A$$ can be viewed as the following:
 ![computation_graph_for_a](../assets/img/computation_graph_for_a.png?style=centerme)
-Layer-0 is the input layer with node feature $$X$$. In each layer, GCN combines the node features and transform them into some hidden representations.
+Layer-0 is the input layer with node feature $$X$$. In each layer, GCN combines the node features and transforms them into some hidden representations.
 
 ### Deep Encoders
 With the above idea, here is the mathematical expression at each layer using the average aggregation function:
 * at 0th layer: $$h^0_v = x_v$$, this is the node feature
 * at kth layer: $$ h_v^{K} = \sigma(W_k\sum_{u\in N(v)}\frac{h_u^{k-1}}{\rvert N(v)\rvert} + B_kh_v^{k-1}), \forall k \in \{1, .., K\}$$,
 
- $$h_v^{k-1}$$ is the embedding from the previous layer, $$\sigma$$ is the activation function (e.g. ReLU), $$W_k, B_k$$ are the trainable parameters, and $$\rvert N(v) \rvert$$ are the neighbours of node $$v$$.
+$$h_v^{k-1}$$ is the embedding from the previous layer, $$\sigma$$ is the activation function (e.g. ReLU), $$W_k, B_k$$ are the trainable parameters, and $$\rvert N(v) \rvert$$ are the neighbours of node $$v$$.
 
 * output layer: $$z_v = h_v^{k}$$, this is the final embedding for after $$k$$ layers
 
@@ -69,15 +69,15 @@ For a node $$v$$, we can apply different aggregation methods to the neighbors us
 Here are some commonly used aggregation functions:
 * Mean: Take a weighted average of neighbors
 
- $$AGG = \sum_{u\in N(v)} \frac{h_u^{k-1}}{\rvert N(v) \rvert}$$
+$$AGG = \sum_{u\in N(v)} \frac{h_u^{k-1}}{\rvert N(v) \rvert}$$
 
 * Pooling: Transform neighbor vectors and apply symmetric vector function ($$\gamma$$ can be element-wise mean or max)
 
- $$AGG = \gamma(\{ Qh_u^{k-1}, \forall u\in N(v)\})$$
+$$AGG = \gamma(\{ Qh_u^{k-1}, \forall u\in N(v)\})$$
 
 * LSTM: Apply LSTM to reshuffled neighbors
 
- $$AGG = LSTM(\{ h_u^{k-1}, \forall u\in \pi(N(v)\}))$$
+$$AGG = LSTM(\{ h_u^{k-1}, \forall u\in \pi(N(v)\}))$$
 
 ## Graph Attention Network
 What happened if we want to incorporate different weights for different nodes? Maybe some nodes can express more important information than others.
@@ -129,4 +129,3 @@ Here is a list of useful references:
 **Other GNN Techniques:**
 * [Pre-training Graph Neural Networks (Hu et al., 2019)](https://arxiv.org/pdf/1905.12265.pdf)
 * [GNNExplainer: Generating Explanations for Graph Neural Networks (Ying et al., 2019)](https://arxiv.org/pdf/1903.03894.pdf)
-
