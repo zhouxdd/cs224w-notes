@@ -28,7 +28,7 @@ Given $$G = (V, A, X)$$ be a graph such that:
 ![aggregate_neighbors](../assets/img/aggregate_neighbors.png?style=centerme)
 Suppose $$G$$ is the graph in the above figure on the left, our goal is to define a computation graph of GCN with convolution. The GCN should keep the structure of the graph and incorporate the neighboring features. For example, if we want to create an embedding for node $$A$$, we can aggregate the information from its neighbor: $$B, C, D$$.
 The aggregation (little boxes) needs to be **order invariant** (max, average, etc.).
-The computation graph for all the nodes in the graph with two layers deep will look like the following:
+The computational graph for $$G$$ with two-layer depth will look like the following:
 ![computation_graph](../assets/img/computation_graph.png?style=centerme)
 Notice that every node defines a computation graph based on its neighbors. In particular, the computation graph for node $$A$$ can be viewed as the following:
 ![computation_graph_for_a](../assets/img/computation_graph_for_a.png?style=centerme)
