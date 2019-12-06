@@ -16,7 +16,7 @@ Fortunately, the above limitations can be solved by using graph neural networks.
 
 ## Graph Convolutional Networks (GCN)
 
-Traditionally, a neural network is designed for fixed-sized graphs. For example, we could consider an image as fixed-size graph or text as a line graph. However, most of the graphs in the real world have an arbitrary size and complex topological structure. Therefore, we need to define the computation graph of GCN differently.
+Traditionally, a neural network is designed for fixed-sized graphs. For example, we could consider an image as fixed-size graph or text as a line graph. However, most of the graphs in the real world have an arbitrary size and complex topological structure. Therefore, we need to define the computational graph of GCN differently.
 
 ### Setup
 Given $$G = (V, A, X)$$ be a graph such that:
@@ -24,13 +24,13 @@ Given $$G = (V, A, X)$$ be a graph such that:
 * $$A$$ is the adjacency matrix
 * $$X\in \mathbb{R}^{m\times\rvert V \rvert}$$ is the node feature matrix
 
-### Computation Graph and Generalized Convolution
+### Computational Graph and Generalized Convolution
 ![aggregate_neighbors](../assets/img/aggregate_neighbors.png?style=centerme)
-Suppose $$G$$ is the graph in the above figure on the left, our goal is to define a computation graph of GCN with convolution. The GCN should keep the structure of the graph and incorporate the neighboring features. For example, if we want to create an embedding for node $$A$$, we can aggregate the information from its neighbor: $$B, C, D$$.
+Suppose $$G$$ is the graph in the above figure on the left, our goal is to define a computational graph of GCN with convolution. The GCN should keep the structure of the graph and incorporate the neighboring features. For example, if we want to create an embedding for node $$A$$, we can aggregate the information from its neighbor: $$B, C, D$$.
 The aggregation (little boxes) needs to be **order invariant** (max, average, etc.).
 The computational graph for $$G$$ with two-layer depth will look like the following:
 ![computation_graph](../assets/img/computation_graph.png?style=centerme)
-Notice that every node defines a computation graph based on its neighbors. In particular, the computation graph for node $$A$$ can be viewed as the following:
+Notice that every node defines a computational graph based on its neighbors. In particular, the computational graph for node $$A$$ can be viewed as the following:
 ![computation_graph_for_a](../assets/img/computation_graph_for_a.png?style=centerme)
 Layer-0 is the input layer with node feature $$X$$. In each layer, GCN combines the node features and transforms them into some hidden representations.
 
