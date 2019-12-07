@@ -39,7 +39,9 @@ With the above idea, here is the mathematical expression at each layer using the
 * at 0th layer: $$h^0_v = x_v$$, this is the node feature
 * at kth layer: $$ h_v^{K} = \sigma(W_k\sum_{u\in N(v)}\frac{h_u^{k-1}}{\rvert N(v)\rvert} + B_kh_v^{k-1}), \forall k \in \{1, .., K\}$$,
 
-$$h_v^{k-1}$$ is the embedding from the previous layer, $$\sigma$$ is the activation function (e.g. ReLU), $$W_k, B_k$$ are the trainable parameters, and $$\rvert N(v) \rvert$$ are the neighbours of node $$v$$.
+$$h_v^{k-1}$$ is the embedding of node $$v$$ from the previous layer. $$\rvert N(v) \rvert$$ are the neighbours of node $$v$$, 
+and the purpose of $$\sum_{u\in N(v)}\frac{h_u^{k-1}}{\rvert N(v) \rvert}$$ is to aggregate neighboring features from the previous layer. 
+$$\sigma$$ is the activation function (e.g. ReLU) to introduce non-linearity, and $$W_k, B_k$$ are the trainable parameters. 
 
 * output layer: $$z_v = h_v^{k}$$, this is the final embedding for after $$k$$ layers
 
@@ -52,11 +54,12 @@ For example, for a binary classification task, we can define the loss function a
 
 $$L = \sum_{v\in V} y_v \log(\sigma(z_v^T\theta)) + (1-y_v)\log(1-\sigma(z_v^T\theta))$$
 
-Here, $$y_v$$ is the node class label, $$z_v$$ is the encoder output, $$\theta$$ is the classification weight, and $$\sigma$$ can be the sigmoid function.
+Here, $$y_v \in \{0, 1\}$$ is the node class label, $$z_v$$ is the encoder output, $$\theta$$ is the classification weight, and $$\sigma$$ can be the sigmoid function. $$\sigma(z_v^T\theta)$$ represents the predicted probability of node $$v$$, therefore the first half of the equation will contribute to the loss if the label is positive ($$y_v=1$$) and vice versa.
+
 In addition, we can also train the model in an unsupervised manner by using: random walk, graph factorization, node proximity, etc.
 
 ### Inductive Capability
-GCN can also be generalized to unseen nodes in a graph. For example, if the model is trained using nodes $$A, B, C$$, the newly added nodes $$D,E,F$$ can also be evaluated since all the parameters are share crossed all nodes.
+GCN can also be generalized to unseen nodes in a graph. For example, if the model is trained using nodes $$A, B, C$$, the newly added nodes $$D,E,F$$ can also be evaluated since all the parameters are shared crossed all nodes.
 ![apply_to_new_nodes](../assets/img/apply_to_new_nodes.png?style=centerme)
 
 
@@ -88,7 +91,7 @@ Let $$\alpha_{vu}$$ be the weighting factor (importance) of node $$u$$'s message
 Let $$\alpha_{uv}$$ be computed as a byproduct of an attention mechanism $$a$$ where
 $$a$$ computes the attention coefficients $$e_{vu}$$ across pairs of nodes $$u, v$$ based on their messages:
 
-$$e_{vu} = a(W_kh_u^{k-1}, W_kh)v^{k-1}$$
+$$e_{vu} = a(W_kh_u^{k-1}, W_kh_v^{k-1})$$
 
 $$e_{vu}$$ indicates the importance of node $$u$$'s message to node $$v$$. Then, we can normalize the coefficients using the softmax in
 order to compare importance across different neighborhoods:
