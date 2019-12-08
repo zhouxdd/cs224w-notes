@@ -59,7 +59,7 @@ Here, $$y_v \in \{0, 1\}$$ is the node class label, $$z_v$$ is the encoder outpu
 In addition, we can also train the model in an unsupervised manner by using: random walk, graph factorization, node proximity, etc.
 
 ### Inductive Capability
-GCN can also be generalized to unseen nodes in a graph. For example, if the model is trained using nodes $$A, B, C$$, the newly added nodes $$D,E,F$$ can also be evaluated since all the parameters are shared crossed all nodes.
+GCN can also be generalized to unseen nodes in a graph. For example, if the model is trained using nodes $$A, B, C$$, the newly added nodes $$D,E,F$$ can also be evaluated since all the parameters are shared across all nodes.
 ![apply_to_new_nodes](../assets/img/apply_to_new_nodes.png?style=centerme)
 
 
