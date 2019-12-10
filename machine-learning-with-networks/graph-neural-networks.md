@@ -3,22 +3,22 @@ layout: post
 title: Graph Neural Networks
 ---
 
-In the previous section, we have learned how to represent a graph using "shallow" encoders. Those techniques give us powerful expressions of a graph in a vector space, but there are limitations as well. In this section, we will explore three different approaches using graph neural networks to overcome the limitations.
+In the previous section, we have learned how to represent a graph using "shallow encoders". Those techniques give us powerful expressions of a graph in a vector space, but there are limitations as well. In this section, we will explore three different approaches using graph neural networks to overcome the limitations.
 
 ## Limitations of "Shallow Encoders"
-* Shallow Encoders do not scale, as every node has its own embeddings.
+* Shallow Encoders do not scale, as each node has a unique embedding.
 * Shallow Encoders are inherently transductive. It can only generate embeddings for a single fixed graph.
-* Node Feature are not taken into consideration. 
+* Node Features are not taken into consideration. 
 * Shallow Encoders cannot be generalized to train with different loss functions.
 
 Fortunately, graph neural networks can solve the above limitations.
 
 ## Graph Convolutional Networks (GCN)
 
-Traditionally, neural networks are designed for fixed-sized graphs. For example, we could consider an image as a fixed-size graph or a piece of text as a line graph. However, most of the graphs in the real world have an arbitrary size and complex topological structure. Therefore, we need to define the computational graph of GCN differently.
+Traditionally, neural networks are designed for fixed-sized graphs. For example, we could consider an image as a grid graph or a piece of text as a line graph. However, most of the graphs in the real world have an arbitrary size and complex topological structure. Therefore, we need to define the computational graph of GCN differently.
 
 ### Setup
-Given $$G = (V, A, X)$$ be a graph such that:
+Given a graph $$G = (V, A, X)$$ such that:
 * $$V$$ is the vertex set
 * $$A$$ is the adjacency matrix
 * $$X\in \mathbb{R}^{m\times\rvert V \rvert}$$ is the node feature matrix
@@ -27,29 +27,30 @@ Given $$G = (V, A, X)$$ be a graph such that:
 
 ![aggregate_neighbors](../assets/img/aggregate_neighbors.png?style=centerme)
 
-Let $$G$$ be our example graph (referring to the above figure on the left). Our goal is to define a computational graph of GCN on $$G$$. The computational graph should keep the structure of $$G$$ and incorporating the nodes' neighboring features at the same time. For example, the embedding vector of node $$A$$ should consist of its neighbor $$\{B, C, D\}$$, and not depend on the ordering of $$\{B, C, D\}$$.  One way to do this is to simply take the average of the features of $$\{B, C, D\}$$. In general, the aggregation function (referring to the boxes in the above figure on the right) needs to be **order invariant** (max, average, etc.).
-The computational graph for $$G$$ with two layers will look like the following:
+Let the example graph (referring to the above figure on the left) be our $$G$$. Our goal is to define a computational graph of GCN on $$G$$. The computational graph should keep the structure of $$G$$ and incorporate the nodes' neighboring features at the same time. For example, the embedding vector of node $$A$$ should consist of its neighbor $$\{B, C, D\}$$, and not depend on the ordering of $$\{B, C, D\}$$.  One way to do this is to simply take the average of the features of $$\{B, C, D\}$$. In general, the aggregation function (referring to the boxes in the above figure on the right) needs to be **order invariant** (max, average, etc.).
+The computational graph on $$G$$ with two layers will look like the following:
 
 ![computation_graph](../assets/img/computation_graph.png?style=centerme)
 
-Here, every node defines a computational graph based on its neighbors. In particular, the computational graph for node $$A$$ can be viewed as the following:
+Here, each node defines a computational graph based on its neighbors. In particular, the computational graph for node $$A$$ can be viewed as the following (Layer-0 is the input layer with node feature $$X_i$$):
 
 ![computation_graph_for_a](../assets/img/computation_graph_for_a.png?style=centerme)
 
-Layer-0 is the input layer with node feature $$X$$. In each layer, GCN combines the node features and transforms them into some hidden representations.
-
 ### Deep Encoders
-With the above idea, here is the mathematical expression at each layer using the average aggregation function:
+With the above idea, here is the mathematical expression at each layer for node $$v$$ using the average aggregation function:
 * At 0th layer: $$h^0_v = x_v$$. This is the node feature.
-* At kth layer: $$ h_v^{K} = \sigma(W_k\sum_{u\in N(v)}\frac{h_u^{k-1}}{\rvert N(v)\rvert} + B_kh_v^{k-1}), \forall k \in \{1, .., K\}$$.
 
-$$h_v^{k-1}$$ is the embedding of node $$v$$ from the previous layer. $$\rvert N(v) \rvert$$ are the neighbors of node $$v$$.
-The purpose of $$\sum_{u\in N(v)}\frac{h_u^{k-1}}{\rvert N(v) \rvert}$$ is to aggregate neighboring features from the previous layer.
-$$\sigma$$ is the activation function (e.g. ReLU) to introduce non-linearity. $$W_k, B_k$$ are the trainable parameters.
+* At kth layer: $$ h_v^{k} = \sigma(W_k\sum_{u\in N(v)}\frac{h_u^{k-1}}{\rvert N(v)\rvert} + B_kh_v^{k-1}), \forall k \in \{1, .., K\}$$.
 
-* Output layer: $$z_v = h_v^{k}$$. This is the final embedding after $$k$$ layers.
+$$h_v^{k-1}$$ is the embedding of node $$v$$ from the previous layer. $$\rvert N(v) \rvert$$ is the number of the neighbors of node $$v$$.
+The purpose of $$\sum_{u\in N(v)}\frac{h_u^{k-1}}{\rvert N(v) \rvert}$$ is to aggregate neighboring features of $$v$$ from the previous layer.
+$$\sigma$$ is the activation function (e.g. ReLU) to introduce non-linearity. $$W_k$$ and $$B_k$$ are the trainable parameters.
 
-Equivalently, the above computation can be written in a vector form: $$ H^{l+1} = \sigma(H^{l}W_0^{l} + \tilde{A}H^{l}W_1^{l}) $$ such that $$\tilde{A}=D^{-\frac{1}{2}}AD^{-\frac{1}{2}}$$.
+* Output layer: $$z_v = h_v^{K}$$. This is the final embedding after $$k$$ layers.
+
+Equivalently, the above computation can be written in a matrix multiplication form for the entire graph: 
+
+$$ H^{l+1} = \sigma(H^{l}W_0^{l} + \tilde{A}H^{l}W_1^{l}) $$ such that $$\tilde{A}=D^{-\frac{1}{2}}AD^{-\frac{1}{2}}$$.
 
 
 ### Training the Model
@@ -87,7 +88,7 @@ $$AGG = \gamma(\{ Qh_u^{k-1}, \forall u\in N(v)\})$$
 
 $$AGG = LSTM(\{ h_u^{k-1}, \forall u\in \pi(N(v)\}))$$
 
-## Graph Attention Network
+## Graph Attention Networks
 
 What if some neighboring nodes carry more important information than the others? In this case, we would want to assign different weights to different neighboring nodes by using the attention technique.
 
@@ -106,7 +107,7 @@ Therefore, we have:
 
 $$h_{v}^k = \sigma(\sum_{u\in N(v)}\alpha_{vu}W_kh^{k-1}_u)$$
 
-This approach is agnostic to the choice of $$a$$ and the parameters of $$a$$ can be trained jointly.
+This approach is agnostic to the choice of $$a$$ and the parameters of $$a$$ can be trained jointly with $$W_k$$.
 
 ## Reference
 Here is a list of useful references:
