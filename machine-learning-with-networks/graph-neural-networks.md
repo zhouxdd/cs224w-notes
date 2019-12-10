@@ -6,10 +6,10 @@ title: Graph Neural Networks
 In the previous section, we have learned how to represent a graph using "shallow" encoders. Those techniques give us powerful expressions of a graph in a vector space, but there are limitations as well. In this section, we will explore three different approaches using graph neural networks to overcome the limitations.
 
 ## Limitations of "Shallow Encoders"
-* Shallow Encoders do not scale: every node has its own embeddings.
-* Shallow Encoders are inherently transductive: it can only generate embeddings for a single fixed graph.
-* Node Feature are not taken into consideration: it cannot leverage node features.
-* Shallow Encoders are not task-specific: it cannot be generalized to train with different loss functions.
+* Shallow Encoders do not scale, as every node has its own embeddings.
+* Shallow Encoders are inherently transductive. It can only generate embeddings for a single fixed graph.
+* Node Feature are not taken into consideration. 
+* Shallow Encoders cannot be generalized to train with different loss functions.
 
 Fortunately, graph neural networks can solve the above limitations.
 
