@@ -68,7 +68,7 @@ GCN can be generalized to unseen nodes in a graph. For example, if a model is tr
 ![apply_to_new_nodes](../assets/img/apply_to_new_nodes.png?style=centerme)
 
 
-## GraphSage
+## GraphSAGE
 So far we have explored a simple neighborhood aggregation method, but we can also generalize the aggregation method in the following form:
 
 $$ h_v^{K} = \sigma([W_k AGG(\{h_u^{k-1}, \forall u \in N(v)\}), B_kh_v^{k-1}])$$
