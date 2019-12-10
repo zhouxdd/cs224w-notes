@@ -73,7 +73,7 @@ So far we have explored a simple neighborhood aggregation method, but we can als
 
 $$ h_v^{K} = \sigma([W_k AGG(\{h_u^{k-1}, \forall u \in N(v)\}), B_kh_v^{k-1}])$$
 
-For node $$v$$, we can apply different aggregation methods ($$AGG$$) to its neighbors and concatenate the features with the target node itself.
+For node $$v$$, we can apply different aggregation methods ($$AGG$$) to its neighbors and concatenate the features with $$v$$ itself.
 
 Here are some commonly used aggregation functions:
 * Mean: Take a weighted average of its neighbors.
