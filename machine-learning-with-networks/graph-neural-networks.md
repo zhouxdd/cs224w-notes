@@ -46,7 +46,7 @@ $$h_v^{k-1}$$ is the embedding of node $$v$$ from the previous layer. $$\rvert N
 The purpose of $$\sum_{u\in N(v)}\frac{h_u^{k-1}}{\rvert N(v) \rvert}$$ is to aggregate neighboring features of $$v$$ from the previous layer.
 $$\sigma$$ is the activation function (e.g. ReLU) to introduce non-linearity. $$W_k$$ and $$B_k$$ are the trainable parameters.
 
-* Output layer: $$z_v = h_v^{K}$$. This is the final embedding after $$k$$ layers.
+* Output layer: $$z_v = h_v^{K}$$. This is the final embedding after $$K$$ layers.
 
 Equivalently, the above computation can be written in a matrix multiplication form for the entire graph: 
 
@@ -59,12 +59,12 @@ For example, for a binary classification task, we can define the loss function a
 
 $$L = \sum_{v\in V} y_v \log(\sigma(z_v^T\theta)) + (1-y_v)\log(1-\sigma(z_v^T\theta))$$
 
-$$y_v \in \{0, 1\}$$ is the node class label. $$z_v$$ is the encoder output. $$\theta$$ is the classification weight. $$\sigma$$ can be the sigmoid function. $$\sigma(z_v^T\theta)$$ represents the predicted probability of node $$v$$. Therefore, the first half of the equation would contribute to the loss, if the label is positive ($$y_v=1$$). Otherwise, the second half of the equation would contribute to the loss.
+$$y_v \in \{0, 1\}$$ is the node class label. $$z_v$$ is the encoder output. $$\theta$$ is the classification weight. $$\sigma$$ can be the sigmoid function. $$\sigma(z_v^T\theta)$$ represents the predicted probability of node $$v$$. Therefore, the first half of the equation would contribute to the loss function, if the label is positive ($$y_v=1$$). Otherwise, the second half of the equation would contribute to the loss function.
 
 We can also train the model in an unsupervised manner by using: random walk, graph factorization, node proximity, etc.
 
 ### Inductive Capability
-GCN can also be generalized to unseen nodes in a graph. For example, if a model is trained using nodes $$A, B, C$$, the newly added nodes $$D, E, F$$ can also be evaluated since the parameters are shared across all nodes.
+GCN can be generalized to unseen nodes in a graph. For example, if a model is trained using nodes $$A, B, C$$, the newly added nodes $$D, E, F$$ can also be evaluated since the parameters are shared across all nodes.
 ![apply_to_new_nodes](../assets/img/apply_to_new_nodes.png?style=centerme)
 
 
@@ -92,7 +92,7 @@ $$AGG = LSTM(\{ h_u^{k-1}, \forall u\in \pi(N(v)\}))$$
 
 What if some neighboring nodes carry more important information than the others? In this case, we would want to assign different weights to different neighboring nodes by using the attention technique.
 
-Let $$\alpha_{vu}$$ be the weighting factor (importance) of node $$u$$'s message to node $$v$$. From the average aggregation above, we define $$\alpha=\frac{1}{\rvert N(v) \rvert}$$. However, we can also explicitly define $$\alpha$$ based on the structural property of a graph.
+Let $$\alpha_{vu}$$ be the weighting factor (importance) of node $$u$$'s message to node $$v$$. From the average aggregation above, we have defined $$\alpha=\frac{1}{\rvert N(v) \rvert}$$. However, we can also explicitly define $$\alpha$$ based on the structural property of a graph.
 
 ### Attention Mechanism
 Let $$\alpha_{uv}$$ be computed as the byproduct of an attention mechanism $$a$$, which computes the attention coefficients $$e_{vu}$$ across pairs of nodes $$u, v$$ based on their messages:
