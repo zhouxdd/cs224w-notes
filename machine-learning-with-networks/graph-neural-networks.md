@@ -3,20 +3,19 @@ layout: post
 title: Graph Neural Networks
 ---
 
-In the previous section, we have learned how to represent a graph using "shallow" encoders. Those techniques give us a powerful expression over a graph in a vector space, but there are limitations. In this section, we will explore several different approaches using graph neural networks.
-
+In the previous section, we have learned how to represent a graph using "shallow" encoders. Those techniques give us powerful expressions of a graph in a vector space, but there are limitations as well. In this section, we will explore three different approaches using graph neural networks to overcome the limitations.
 
 ## Limitations of "Shallow Encoders"
-* Scalability: every node has its own embeddings
-* Inherently Transductive: it cannot generate embeddings for unseen nodes.
-* Node Feature Excluded: it cannot leverage node features.
-* Not Task-Specific: it cannot be generalized to train with different loss functions.
+* Shallow Encoders do not scale: every node has its own embeddings.
+* Shallow Encoders are inherently transductive: it can only generate embeddings for a single fixed graph.
+* Node Feature are not taken into consideration: it cannot leverage node features.
+* Shallow Encoders are not task-specific: it cannot be generalized to train with different loss functions.
 
-Fortunately, the above limitations can be solved by using graph neural networks.
+Fortunately, graph neural networks can solve the above limitations.
 
 ## Graph Convolutional Networks (GCN)
 
-Traditionally, a neural network is designed for fixed-sized graphs. For example, we could consider an image as fixed-size graph or text as a line graph. However, most of the graphs in the real world have an arbitrary size and complex topological structure. Therefore, we need to define the computational graph of GCN differently.
+Traditionally, neural networks are designed for fixed-sized graphs. For example, we could consider an image as a fixed-size graph or a piece of text as a line graph. However, most of the graphs in the real world have an arbitrary size and complex topological structure. Therefore, we need to define the computational graph of GCN differently.
 
 ### Setup
 Given $$G = (V, A, X)$$ be a graph such that:
@@ -25,76 +24,81 @@ Given $$G = (V, A, X)$$ be a graph such that:
 * $$X\in \mathbb{R}^{m\times\rvert V \rvert}$$ is the node feature matrix
 
 ### Computational Graph and Generalized Convolution
+
 ![aggregate_neighbors](../assets/img/aggregate_neighbors.png?style=centerme)
-Suppose $$G$$ is the graph in the above figure on the left, our goal is to define a computational graph of GCN with convolution. The GCN should keep the structure of the graph and incorporate the neighboring features. For example, if we want to create an embedding for node $$A$$, we can aggregate the information from its neighbor: $$B, C, D$$.
-The aggregation (little boxes) needs to be **order invariant** (max, average, etc.).
-The computational graph for $$G$$ with two-layer depth will look like the following:
+
+Let $$G$$ be our example graph (referring to the above figure on the left). Our goal is to define a computational graph of GCN on $$G$$. The computational graph should keep the structure of $$G$$ and incorporating the nodes' neighboring features at the same time. For example, the embedding vector of node $$A$$ should consist of its neighbor $$\{B, C, D\}$$, and not depend on the ordering of $$\{B, C, D\}$$.  One way to do this is to simply take the average of the features of $$\{B, C, D\}$$. In general, the aggregation function (referring to the boxes in the above figure on the right) needs to be **order invariant** (max, average, etc.).
+The computational graph for $$G$$ with two layers will look like the following:
+
 ![computation_graph](../assets/img/computation_graph.png?style=centerme)
-Notice that every node defines a computational graph based on its neighbors. In particular, the computational graph for node $$A$$ can be viewed as the following:
+
+Here, every node defines a computational graph based on its neighbors. In particular, the computational graph for node $$A$$ can be viewed as the following:
+
 ![computation_graph_for_a](../assets/img/computation_graph_for_a.png?style=centerme)
+
 Layer-0 is the input layer with node feature $$X$$. In each layer, GCN combines the node features and transforms them into some hidden representations.
 
 ### Deep Encoders
 With the above idea, here is the mathematical expression at each layer using the average aggregation function:
-* at 0th layer: $$h^0_v = x_v$$, this is the node feature
-* at kth layer: $$ h_v^{K} = \sigma(W_k\sum_{u\in N(v)}\frac{h_u^{k-1}}{\rvert N(v)\rvert} + B_kh_v^{k-1}), \forall k \in \{1, .., K\}$$,
+* At 0th layer: $$h^0_v = x_v$$. This is the node feature.
+* At kth layer: $$ h_v^{K} = \sigma(W_k\sum_{u\in N(v)}\frac{h_u^{k-1}}{\rvert N(v)\rvert} + B_kh_v^{k-1}), \forall k \in \{1, .., K\}$$.
 
-$$h_v^{k-1}$$ is the embedding of node $$v$$ from the previous layer. $$\rvert N(v) \rvert$$ are the neighbours of node $$v$$, 
-and the purpose of $$\sum_{u\in N(v)}\frac{h_u^{k-1}}{\rvert N(v) \rvert}$$ is to aggregate neighboring features from the previous layer. 
-$$\sigma$$ is the activation function (e.g. ReLU) to introduce non-linearity, and $$W_k, B_k$$ are the trainable parameters. 
+$$h_v^{k-1}$$ is the embedding of node $$v$$ from the previous layer. $$\rvert N(v) \rvert$$ are the neighbors of node $$v$$.
+The purpose of $$\sum_{u\in N(v)}\frac{h_u^{k-1}}{\rvert N(v) \rvert}$$ is to aggregate neighboring features from the previous layer.
+$$\sigma$$ is the activation function (e.g. ReLU) to introduce non-linearity. $$W_k, B_k$$ are the trainable parameters.
 
-* output layer: $$z_v = h_v^{k}$$, this is the final embedding for after $$k$$ layers
+* Output layer: $$z_v = h_v^{k}$$. This is the final embedding after $$k$$ layers.
 
-Equivalently, these computation can be written in a vector form: $$ H^{l+1} = \sigma(H^{l}W_0^{l} + \tilde{A}H^{l}W_1^{l}) $$ such that $$\tilde{A}=D^{-\frac{1}{2}}AD^{-\frac{1}{2}}$$
+Equivalently, the above computation can be written in a vector form: $$ H^{l+1} = \sigma(H^{l}W_0^{l} + \tilde{A}H^{l}W_1^{l}) $$ such that $$\tilde{A}=D^{-\frac{1}{2}}AD^{-\frac{1}{2}}$$.
 
 
 ### Training the Model
-We can feed these embeddings into any loss functions and run stochastic gradient descent to train the parameters.
+We can feed these embeddings into any loss function and run stochastic gradient descent to train the parameters.
 For example, for a binary classification task, we can define the loss function as:
 
 $$L = \sum_{v\in V} y_v \log(\sigma(z_v^T\theta)) + (1-y_v)\log(1-\sigma(z_v^T\theta))$$
 
-Here, $$y_v \in \{0, 1\}$$ is the node class label, $$z_v$$ is the encoder output, $$\theta$$ is the classification weight, and $$\sigma$$ can be the sigmoid function. $$\sigma(z_v^T\theta)$$ represents the predicted probability of node $$v$$, therefore the first half of the equation will contribute to the loss if the label is positive ($$y_v=1$$) and vice versa.
+$$y_v \in \{0, 1\}$$ is the node class label. $$z_v$$ is the encoder output. $$\theta$$ is the classification weight. $$\sigma$$ can be the sigmoid function. $$\sigma(z_v^T\theta)$$ represents the predicted probability of node $$v$$. Therefore, the first half of the equation would contribute to the loss, if the label is positive ($$y_v=1$$). Otherwise, the second half of the equation would contribute to the loss.
 
-In addition, we can also train the model in an unsupervised manner by using: random walk, graph factorization, node proximity, etc.
+We can also train the model in an unsupervised manner by using: random walk, graph factorization, node proximity, etc.
 
 ### Inductive Capability
-GCN can also be generalized to unseen nodes in a graph. For example, if the model is trained using nodes $$A, B, C$$, the newly added nodes $$D,E,F$$ can also be evaluated since all the parameters are shared across all nodes.
+GCN can also be generalized to unseen nodes in a graph. For example, if a model is trained using nodes $$A, B, C$$, the newly added nodes $$D, E, F$$ can also be evaluated since the parameters are shared across all nodes.
 ![apply_to_new_nodes](../assets/img/apply_to_new_nodes.png?style=centerme)
 
 
 ## GraphSage
-So far we have explored a simple neighbourhood aggregation methods, but we can also generalize the aggregations in the following form:
+So far we have explored a simple neighborhood aggregation method, but we can also generalize the aggregation method in the following form:
 
 $$ h_v^{K} = \sigma([W_k AGG(\{h_u^{k-1}, \forall u \in N(v)\}), B_kh_v^{k-1}])$$
 
-For a node $$v$$, we can apply different aggregation methods to the neighbors using other aggregation functions ($$AGG$$), then concatenating the features with the target node itself.
+For a node $$v$$, we can apply different aggregation methods  ($$AGG$$) to its neighbors and concatenate the features with the target node itself.
+
 Here are some commonly used aggregation functions:
-* Mean: Take a weighted average of neighbors
+* Mean: Take a weighted average of its neighbors.
 
 $$AGG = \sum_{u\in N(v)} \frac{h_u^{k-1}}{\rvert N(v) \rvert}$$
 
-* Pooling: Transform neighbor vectors and apply symmetric vector function ($$\gamma$$ can be element-wise mean or max)
+* Pooling: Transform neighbor vectors and apply symmetric vector function ($$\gamma$$ can be element-wise mean or max).
 
 $$AGG = \gamma(\{ Qh_u^{k-1}, \forall u\in N(v)\})$$
 
-* LSTM: Apply LSTM to reshuffled neighbors
+* LSTM: Apply LSTM to reshuffled neighbors.
 
 $$AGG = LSTM(\{ h_u^{k-1}, \forall u\in \pi(N(v)\}))$$
 
 ## Graph Attention Network
-What happened if we want to incorporate different weights for different nodes? Maybe some nodes can express more important information than others.
 
-Let $$\alpha_{vu}$$ be the weighting factor (importance) of node $$u$$'s message to node $$v$$. Previously, in the average aggregation, we defined $$\alpha=\frac{1}{\rvert N(v) \rvert}$$, but we can also explicitly define $$\alpha$$ based on the structural property of a graph.
+What if some neighboring nodes carry more important information than the others? In this case, we would want to assign different weights to different neighboring nodes by using the attention technique.
+
+Let $$\alpha_{vu}$$ be the weighting factor (importance) of node $$u$$'s message to node $$v$$. From the average aggregation above, we define $$\alpha=\frac{1}{\rvert N(v) \rvert}$$. However, we can also explicitly define $$\alpha$$ based on the structural property of a graph.
 
 ### Attention Mechanism
-Let $$\alpha_{uv}$$ be computed as a byproduct of an attention mechanism $$a$$ where
-$$a$$ computes the attention coefficients $$e_{vu}$$ across pairs of nodes $$u, v$$ based on their messages:
+Let $$\alpha_{uv}$$ be computed as the byproduct of an attention mechanism $$a$$, which computes the attention coefficients $$e_{vu}$$ across pairs of nodes $$u, v$$ based on their messages:
 
 $$e_{vu} = a(W_kh_u^{k-1}, W_kh_v^{k-1})$$
 
-$$e_{vu}$$ indicates the importance of node $$u$$'s message to node $$v$$. Then, we can normalize the coefficients using the softmax in
-order to compare importance across different neighborhoods:
+$$e_{vu}$$ indicates the importance of node $$u$$'s message to node $$v$$. Then, we normalize the coefficients using softmax to compare importance across different neighbors:
 
 $$\alpha_{vu} = \frac{\exp(e_{vu})}{\sum_{k\in N(v)}\exp(e_{vk})}$$
 
@@ -102,7 +106,7 @@ Therefore, we have:
 
 $$h_{v}^k = \sigma(\sum_{u\in N(v)}\alpha_{vu}W_kh^{k-1}_u)$$
 
-Notice that this approach is agnostic to the choice of $$a$$ and parameters of $$a$$ can be trained jointly.
+This approach is agnostic to the choice of $$a$$ and the parameters of $$a$$ can be trained jointly.
 
 ## Reference
 Here is a list of useful references:
