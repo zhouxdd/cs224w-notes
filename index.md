@@ -25,8 +25,7 @@ Starting with the Fall 2019 offering of CS 224W, the course covers three broad t
 6. [Network Effects and Cascading Behavior](network-methods/network-effects-and-cascading-behavior): Decision-based diffusion, probabilistic contagion, SEIZ
 7. [Network Robustness](): Power laws, preferential attachment
 8. [Network Evolution](): Densification, forest fire, temporal networks with PageRank
-9. [Knowledge Graphs and Metapaths](): Metapaths, reasoning and completion of KGs
-
+9. [Reasoning over Knowledge Graphs](network-methods/reasoning-over-knowledge-graphs): Path queries, reasoning and completion of KGs, Query2Box
 
 ## Machine Learning with Networks
 
